@@ -1,0 +1,121 @@
+
+system reset-configuration
+y
+
+user add name=netadmin password=Hgl#50tYop group=full
+quit
+
+user disable admin
+
+ip address remove 0
+ip dhcp-server remove 0
+ip dhcp-server network remove 0
+ip firewall nat remove 0
+interface bridge remove 0
+interface lte set 0 disabled=no
+ip dhcp-client add interface=lte1 add-default-route=yes
+ip dhcp-client enable 1
+ip address print
+
+
+interface bridge port remove 0,1,2,3,4
+
+interface ethernet set ether1  master-port=none
+interface ethernet set ether2  master-port=none name=ether2
+interface ethernet set ether3  master-port=none
+interface ethernet set ether4  master-port=none
+interface ethernet set ether5  master-port=none
+interface ethernet set ether6  master-port=none name=ether6
+interface ethernet set ether7  master-port=none
+interface ethernet set ether8  master-port=none
+interface ethernet set ether9  master-port=none
+interface ethernet set ether10  master-port=none
+
+ip firewall filter remove 1,2,3,4,5,6,7
+
+interface wireless set 0 name=Wi-fi security-profile=default mode=ap-bridge ssid=Elar hide-ssid=no
+interface wireless security-profiles set default authentication-types=wpa2-psk mode=dynamic-keys wpa2-pre-shared-key=Yota@elar2018
+
+interface bridge add name=EXT_Bridge
+interface bridge enable EXT_Bridge
+interface vlan add name=VoIP vlan-id=239 interface=EXT_Bridge
+
+interface bridge add name=INT_Bridge
+interface bridge enable INT_Bridge
+interface gre add name=Tunnel77 remote-address=0.0.0.0/21 allow-fast-path=yes clamp-tcp-mss=yes local-address=10.0.0.10
+interface bridge add name=WIFI_Bridge
+interface bridge enable WIFI_Bridge
+
+
+interface bridge port add interface=ether1 bridge=EXT_Bridge
+interface bridge port add interface=ether2 bridge=EXT_Bridge
+interface bridge port add interface=ether3 bridge=EXT_Bridge
+interface bridge port add interface=ether4 bridge=EXT_Bridge
+interface bridge port add interface=ether5 bridge=EXT_Bridge
+interface bridge port add interface=ether6 bridge=INT_Bridge
+interface bridge port add interface=ether7 bridge=INT_Bridge
+interface bridge port add interface=ether8 bridge=INT_Bridge
+interface bridge port add interface=ether9 bridge=INT_Bridge
+interface bridge port add interface=ether10 bridge=INT_Bridge
+interface bridge port add interface=Wi-fi bridge=WIFI_Bridge
+
+
+ip address add address=0.0.0.0/21 interface=EXT_Bridge comment="External Network"
+ip address add address=0.0.0.0/21 interface=INT_Bridge  comment="Internal Network"
+ip address add address=0.0.0.0/21 interface=VoIP  comment="VoIP network"
+ip address add address=0.0.0.0/21 interface=Wi-fi  comment="VoIP network"
+ip address add address=0.0.0.0/21 interface=Tunnel77 comment="Tunnel interface to SAV2-Router"
+
+ip route add dst-address=10.2.0.0/16 gateway=10.0.77.1 distance=1
+ip route add dst-address=10.4.0.0/16 gateway=10.0.77.1 distance=1
+
+ip pool add name=INT_NET_POOL ranges=0.0.0.16-0.0.0.223
+ip pool add name=EXT_NET_POOL ranges=0.0.0.16-0.0.0.223
+ip pool add name=VoIP_NET_POOL ranges=0.0.0.16-0.0.0.223
+ip pool add name=Wifi_NET_POOL ranges=0.0.0.16-0.0.0.223
+
+ip dhcp-server add name=EXT_NET_DHCP interface=EXT_Bridge address-pool=EXT_NET_POOL
+ip dhcp-server network add address=0.0.0.0/21 gateway=0.0.0.1 dns-server=8.8.8.8,8.8.4.4
+ip dhcp-server enable EXT_NET_DHCP
+
+ip dhcp-server add name=INT_NET_DHCP interface=INT_Bridge address-pool=INT_NET_POOL
+ip dhcp-server network add address=0.0.0.0/21 gateway=0.0.0.1 dns-server=8.8.8.8,8.8.4.4
+ip dhcp-server enable INT_NET_DHCP
+
+ip dhcp-server add name=VoIP_NET_DHCP interface=VoIP  address-pool=VoIP_NET_POOL
+ip dhcp-server network add address=0.0.0.0/21 gateway=0.0.0.1 dns-server=8.8.8.8,8.8.4.4
+ip dhcp-server enable VoIP_NET_DHCP
+
+ip dhcp-server add name=Wifi_NET_DHCP interface=WIFI_Bridge  address-pool=Wifi_NET_POOL
+ip dhcp-server network add address=0.0.0.0/21 gateway=0.0.0.1 dns-server=8.8.8.8,8.8.4.4
+ip dhcp-server enable Wifi_NET_DHCP
+
+ip firewall nat add chain=dstnat src-address=0.0.0.0/21 dst-address=10.0.0.10 protocol=gre in-interface=lte1 action=netmap to-addresses=10.0.0.10
+ip firewall nat add chain=srcnat out-interface=lte1 action=masquerade src-address=0.0.0.0/21
+ip firewall nat add chain=srcnat out-interface=lte1 action=masquerade src-address=0.0.0.0/21
+
+ip firewall filter add chain=forward  action=drop in-interface=WIFI_Bridge  dst-address=10.2.0.0/16
+ip firewall filter add chain=forward  action=drop in-interface=WIFI_Bridge  dst-address=10.4.0.0/16
+ip firewall filter add chain=forward action=accept protocol=tcp src-address=0.0.0.0/21
+ip firewall filter add chain=forward action=accept protocol=udp src-address=0.0.0.0/21
+ip firewall filter add chain=input action=accept protocol=tcp src-address=0.0.0.0/21
+ip firewall filter add chain=input action=accept protocol=udp src-address=0.0.0.0/21
+ip firewall filter add chain=input action=accept protocol=icmp
+ip firewall filter add chain=forward  action=accept protocol=icmp
+ip firewall filter add chain=input action=accept connection-state=established
+ip firewall filter add chain=forward action=accept connection-state=established
+ip firewall filter add chain=input action=accept connection-state=related
+ip firewall filter add chain=forward action=accept connection-state=related
+ip firewall filter add chain=input action=accept src-address=10.99.239.0/24 in-interface=!lte1
+ip firewall filter add chain=input action=accept src-address=10.99.48.0/24 in-interface=!lte1
+ip firewall filter add chain=input action=accept src-address=10.99.49.0/24 in-interface=!lte1
+ip firewall filter add chain=input action=accept src-address=10.99.249.0/24 in-interface=!lte1
+ip firewall filter add chain=input action=drop connection-state=invalid
+ip firewall filter add chain=forward  action=drop connection-state=invalid
+ip firewall filter add chain=input action=drop in-interface=lte1
+
+/tool netwatch> add host=8.8.8.8 interval=1m timeout=1s down-script="/system routerboard usb power-reset duration=15s"
+
+
+system reboot
+y

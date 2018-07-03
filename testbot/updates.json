@@ -1,0 +1,51 @@
+{
+  "ok": true,
+  "result": [
+    {
+      "update_id": 727579533,
+      "message": {
+        "message_id": 5,
+        "from": {
+          "id": 5241113,
+          "is_bot": false,
+          "first_name": "Roman",
+          "last_name": "Kozlov",
+          "username": "kozlovroman",
+          "language_code": "ru-RU"
+        },
+        "chat": {
+          "id": 5241113,
+          "first_name": "Roman",
+          "last_name": "Kozlov",
+          "username": "kozlovroman",
+          "type": "private"
+        },
+        "date": 1530624491,
+        "text": "здоров"
+      }
+    },
+    {
+      "update_id": 727579534,
+      "message": {
+        "message_id": 6,
+        "from": {
+          "id": 5241113,
+          "is_bot": false,
+          "first_name": "Roman",
+          "last_name": "Kozlov",
+          "username": "kozlovroman",
+          "language_code": "ru-RU"
+        },
+        "chat": {
+          "id": 5241113,
+          "first_name": "Roman",
+          "last_name": "Kozlov",
+          "username": "kozlovroman",
+          "type": "private"
+        },
+        "date": 1530624636,
+        "text": "пицундра"
+      }
+    }
+  ]
+}
